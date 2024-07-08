@@ -21,6 +21,19 @@ pipeline {
             }
         }
 
+        stage('Prepare Deployment') {
+            steps {
+                writeFile file: 'deploy.sh', text: '''#!/bin/bash
+                cd /home/ubuntu/
+                export APP_PORT=$1
+                sed -i 's/8080/$1/' docker-compose.yml
+                docker compose down
+                docker compose up -d
+                '''
+                sh 'chmod +x deploy.sh'
+            }
+        }
+
         stage('Transfer Files') {
             steps {
                 script {
@@ -29,6 +42,7 @@ pipeline {
                             sh """
                             scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${SERVER_IP}:/home/ubuntu/
                             scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
                             """
                         }
                     }
@@ -40,7 +54,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8081', 'dev', SERVER_IP)
+                        deployToEnv('8081', SERVER_IP)
                     }
                 }
             }
@@ -51,7 +65,7 @@ pipeline {
                 input "Deploy to Staging?"
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8082', 'staging', SERVER_IP)
+                        deployToEnv('8082', SERVER_IP)
                     }
                 }
             }
@@ -62,7 +76,7 @@ pipeline {
                 input "Deploy to Production?"
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8083', 'prod', SERVER_IP)
+                        deployToEnv('8083', SERVER_IP)
                     }
                 }
             }
@@ -76,16 +90,10 @@ pipeline {
     }
 }
 
-def deployToEnv(port, env, serverIp) {
+def deployToEnv(port, serverIp) {
     sshagent(credentials: ['aws-ec2-pem']) {
         sh """
-        ssh -o StrictHostKeyChecking=no ubuntu@${serverIp} << 'EOF'
-        cd /home/ubuntu/
-        export APP_PORT=${port}
-        sed -i 's/8080/${port}/' docker-compose.yml
-        docker compose down
-        docker compose up -d
-        EOF
+        ssh -o StrictHostKeyChecking=no ubuntu@${serverIp} "/home/ubuntu/deploy.sh ${port}"
         """
     }
 }
