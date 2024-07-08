@@ -38,9 +38,9 @@ docker compose up -d
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
                         sshagent(credentials: ['aws-ec2-pem']) {
                             sh """
-                            scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${SERVER_IP}:/home/ubuntu/
-                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
-                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${env.SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${env.SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${env.SERVER_IP}:/home/ubuntu/
                             """
                         }
                     }
@@ -52,8 +52,8 @@ docker compose up -d
             steps {
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToStaging(SERVER_IP)
-                        visitUrl('staging', "http://${SERVER_IP}:8081/swagger-ui/index.html")
+                        deployToStaging(env.SERVER_IP)
+                        visitUrl('staging', "http://${env.SERVER_IP}:8081/swagger-ui/index.html")
                     }
                 }
             }
