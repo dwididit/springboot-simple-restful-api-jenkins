@@ -40,7 +40,7 @@ docker compose up -d
                             sh """
                             scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${SERVER_IP}:/home/ubuntu/
                             scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
-                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking-no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
                             """
                         }
                     }
@@ -53,7 +53,7 @@ docker compose up -d
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
                         deployToStaging(SERVER_IP)
-                        visitUrl('staging', 'http://3.1.221.135:8081/swagger-ui/index.html')
+                        visitUrl('staging', "http://${SERVER_IP}:8081/swagger-ui/index.html")
                     }
                 }
             }
@@ -76,5 +76,13 @@ def deployToStaging(serverIp) {
 }
 
 def visitUrl(env, url) {
-    echo "Visit the ${env} environment at ${url}"
+    echo "Visiting the ${env} environment at ${url}"
+    script {
+        def response = httpRequest url: url, validResponseCodes: '200'
+        if (response.status == 200) {
+            echo "Visit to ${url} was successful"
+        } else {
+            error "Visit to ${url} failed with status code: ${response.status}"
+        }
+    }
 }
