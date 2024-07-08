@@ -24,12 +24,12 @@ pipeline {
         stage('Prepare Deployment') {
             steps {
                 writeFile file: 'deploy.sh', text: '''#!/bin/bash
-                cd /home/ubuntu/
-                export APP_PORT=$1
-                sed -i 's/8080/$1/' docker-compose.yml
-                docker compose down
-                docker compose up -d
-                '''
+cd /home/ubuntu/
+export APP_PORT=$1
+sed -i "s/8080/$1/" docker-compose.yml
+docker compose down
+docker compose up -d
+'''
                 sh 'chmod +x deploy.sh'
             }
         }
