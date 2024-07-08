@@ -26,7 +26,7 @@ pipeline {
                 writeFile file: 'deploy.sh', text: '''#!/bin/bash
 cd /home/ubuntu/
 export APP_PORT=$1
-sed -i "s/8080/$1/" docker-compose.yml
+sed -i "s/8080/$APP_PORT/" docker-compose.yml
 docker compose down
 docker compose up -d
 '''
@@ -50,22 +50,13 @@ docker compose up -d
             }
         }
 
-        stage('Deploy to Dev') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8081', SERVER_IP)
-                    }
-                }
-            }
-        }
-
         stage('Deploy to Staging') {
             steps {
                 input "Deploy to Staging?"
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8082', SERVER_IP)
+                        deployToEnv('8081', SERVER_IP)
+                        visitUrl('staging', 'http://3.1.221.135:8081/swagger-ui/index.html')
                     }
                 }
             }
@@ -76,7 +67,8 @@ docker compose up -d
                 input "Deploy to Production?"
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8083', SERVER_IP)
+                        deployToEnv('8082', SERVER_IP)
+                        visitUrl('production', 'http://3.1.221.135:8082/swagger-ui/index.html')
                     }
                 }
             }
@@ -96,4 +88,8 @@ def deployToEnv(port, serverIp) {
         ssh -o StrictHostKeyChecking=no ubuntu@${serverIp} "/home/ubuntu/deploy.sh ${port}"
         """
     }
+}
+
+def visitUrl(env, url) {
+    echo "Visit the ${env} environment at ${url}"
 }
