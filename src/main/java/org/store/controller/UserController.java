@@ -114,7 +114,6 @@ public class UserController {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail()
-                // Add other fields as necessary
         );
     }
 
