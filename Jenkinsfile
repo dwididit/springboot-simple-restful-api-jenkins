@@ -2,14 +2,16 @@ pipeline {
     agent any
 
     environment {
-        SERVER_IP = credentials('server-ip-id')
-        GITHUB_TOKEN = credentials('github-token-id')
+        SERVER_IP_CRED_ID = 'server-ip-id'
+        GITHUB_TOKEN_CRED_ID = 'github-token-id'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: "https://${GITHUB_TOKEN}@github.com/dwididit/springboot-simple-restful-api-jenkins.git", branch: 'master'
+                withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN')]) {
+                    git url: "https://${GITHUB_TOKEN}@github.com/dwididit/springboot-simple-restful-api-jenkins.git", branch: 'master'
+                }
             }
         }
 
@@ -55,16 +57,18 @@ pipeline {
 }
 
 def deployToEnv(port, env) {
-    sshagent(credentials: ['aws-ec2-pem']) {
-        sh """
-        scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
-        ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << EOF
-        cd /home/ubuntu/
-        export APP_PORT=${port}
-        sed -i 's/8080/${port}/' docker-compose.yml
-        docker compose down
-        docker compose up -d
-        EOF
-        """
+    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+        sshagent(credentials: ['aws-ec2-pem']) {
+            sh """
+            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
+            ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << EOF
+            cd /home/ubuntu/
+            export APP_PORT=${port}
+            sed -i 's/8080/${port}/' docker-compose.yml
+            docker compose down
+            docker compose up -d
+            EOF
+            """
+        }
     }
 }
