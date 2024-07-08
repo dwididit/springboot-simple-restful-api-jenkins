@@ -3,12 +3,13 @@ pipeline {
 
     environment {
         SERVER_IP = credentials('server-ip-id')
+        GITHUB_TOKEN = credentials('github-token-id')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/dwididit/springboot-simple-restful-api-jenkins', credentialsId: 'github-token-id'
+                git url: "https://${GITHUB_TOKEN}@github.com/dwididit/springboot-simple-restful-api-jenkins.git", branch: 'master'
             }
         }
 
