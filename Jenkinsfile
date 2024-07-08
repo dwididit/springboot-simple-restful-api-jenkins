@@ -40,7 +40,7 @@ docker compose up -d
                             sh """
                             scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${SERVER_IP}:/home/ubuntu/
                             scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
-                            scp -o StrictHostKeyChecking-no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
                             """
                         }
                     }
