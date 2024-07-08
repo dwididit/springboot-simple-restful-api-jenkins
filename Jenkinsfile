@@ -37,11 +37,11 @@ docker compose up -d
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
                         sshagent(credentials: ['aws-ec2-pem']) {
-                            sh """
-                            scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${env.SERVER_IP}:/home/ubuntu/
-                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${env.SERVER_IP}:/home/ubuntu/
-                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${env.SERVER_IP}:/home/ubuntu/
-                            """
+                            sh '''
+                            scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
+                            '''
                         }
                     }
                 }
@@ -52,8 +52,8 @@ docker compose up -d
             steps {
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToStaging(env.SERVER_IP)
-                        visitUrl('staging', "http://${env.SERVER_IP}:8081/swagger-ui/index.html")
+                        deployToStaging()
+                        visitUrl('staging')
                     }
                 }
             }
@@ -67,25 +67,26 @@ docker compose up -d
     }
 }
 
-def deployToStaging(serverIp) {
+def deployToStaging() {
     sshagent(credentials: ['aws-ec2-pem']) {
-        sh """
-        ssh -o StrictHostKeyChecking=no ubuntu@${serverIp} "/home/ubuntu/deploy.sh"
-        """
+        sh '''
+        ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} "/home/ubuntu/deploy.sh"
+        '''
     }
 }
 
-def visitUrl(env, url) {
-    echo "Visiting the ${env} environment at ${url}"
-    sh """
+def visitUrl(env) {
+    echo "Visiting the ${env} environment"
+    sh '''
     sleep 30
-    response=\$(curl -s -o /dev/null -w "%{http_code}" ${url})
-    echo "Response code: \$response"
-    if [ "\$response" -eq 200 ]; then
-        echo "Visit to ${url} was successful"
+    url="http://${SERVER_IP}:8081/swagger-ui/index.html"
+    response=$(curl -s -o /dev/null -w "%{http_code}" $url)
+    echo "Response code: $response"
+    if [ "$response" -eq 200 ]; then
+        echo "Visit to $url was successful"
     else
-        echo "Visit to ${url} failed with status code: \$response"
+        echo "Visit to $url failed with status code: $response"
         exit 1
     fi
-    """
+    '''
 }
