@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.info.License;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 
-@SecurityScheme( // Moved outside the class declaration
+@SecurityScheme(
         name = "ApiKeyAuth",
         type = SecuritySchemeType.APIKEY,
         in = SecuritySchemeIn.HEADER,
