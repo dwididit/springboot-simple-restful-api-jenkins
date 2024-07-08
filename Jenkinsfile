@@ -7,16 +7,16 @@ pipeline {
     }
 
     triggers {
-        githubPush()
-    }
+            githubPush()
+        }
 
     stages {
         stage('Checkout') {
             steps {
                 withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN')]) {
-                    script {
-                        git url: "https://${GITHUB_TOKEN}@github.com/dwididit/springboot-simple-restful-api-jenkins.git", branch: 'master'
-                    }
+                    sh 'git config --global credential.helper store'
+                    sh 'echo "https://${GITHUB_TOKEN}:@github.com" > ~/.git-credentials'
+                    git url: "https://github.com/dwididit/springboot-simple-restful-api-jenkins.git", branch: 'master'
                 }
             }
         }
