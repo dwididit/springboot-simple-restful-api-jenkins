@@ -39,7 +39,9 @@ pipeline {
         stage('Deploy to Dev') {
             steps {
                 script {
-                    deployToEnv('8081', 'dev')
+                    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+                        deployToEnv('8081', 'dev', SERVER_IP)
+                    }
                 }
             }
         }
@@ -48,7 +50,9 @@ pipeline {
             steps {
                 input "Deploy to Staging?"
                 script {
-                    deployToEnv('8082', 'staging')
+                    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+                        deployToEnv('8082', 'staging', SERVER_IP)
+                    }
                 }
             }
         }
@@ -57,7 +61,9 @@ pipeline {
             steps {
                 input "Deploy to Production?"
                 script {
-                    deployToEnv('8083', 'prod')
+                    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+                        deployToEnv('8083', 'prod', SERVER_IP)
+                    }
                 }
             }
         }
@@ -70,18 +76,16 @@ pipeline {
     }
 }
 
-def deployToEnv(port, env) {
-    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-        sshagent(credentials: ['aws-ec2-pem']) {
-            sh """
-            ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << 'EOF'
-            cd /home/ubuntu/
-            export APP_PORT=${port}
-            sed -i 's/8080/${port}/' docker-compose.yml
-            docker compose down
-            docker compose up -d
-            EOF
-            """
-        }
+def deployToEnv(port, env, serverIp) {
+    sshagent(credentials: ['aws-ec2-pem']) {
+        sh """
+        ssh -o StrictHostKeyChecking=no ubuntu@${serverIp} << 'EOF'
+        cd /home/ubuntu/
+        export APP_PORT=${port}
+        sed -i 's/8080/${port}/' docker-compose.yml
+        docker compose down
+        docker compose up -d
+        EOF
+        """
     }
 }
