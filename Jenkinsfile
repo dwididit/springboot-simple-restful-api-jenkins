@@ -6,6 +6,10 @@ pipeline {
         GITHUB_TOKEN_CRED_ID = 'github-token-id'
     }
 
+    triggers {
+            githubPush()
+        }
+
     stages {
         stage('Checkout') {
             steps {
