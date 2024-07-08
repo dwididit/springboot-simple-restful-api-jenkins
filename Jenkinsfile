@@ -77,13 +77,17 @@ def deployToStaging(serverIp) {
 
 def visitUrl(env, url) {
     echo "Visiting the ${env} environment at ${url}"
-    sh """
-    response=\$(curl -s -o /dev/null -w "%{http_code}" ${url})
-    if [ "\$response" -eq 200 ]; then
-        echo "Visit to ${url} was successful"
-    else
-        echo "Visit to ${url} failed with status code: \$response"
-        exit 1
-    fi
-    """
+    script {
+        withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+            sh """
+            response=\$(curl -s -o /dev/null -w "%{http_code}" ${url})
+            if [ "\$response" -eq 200 ]; then
+                echo "Visit to ${url} was successful"
+            else
+                echo "Visit to ${url} failed with status code: \$response"
+                exit 1
+            fi
+            """
+        }
+    }
 }
