@@ -25,7 +25,10 @@ pipeline {
         stage('Deploy to Dev') {
             steps {
                 script {
-                    deployToEnv('8081', 'dev')
+                    withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN'),
+                                     string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+                        deployToEnv('8081', 'dev', SERVER_IP, GITHUB_TOKEN)
+                    }
                 }
             }
         }
@@ -34,7 +37,10 @@ pipeline {
             steps {
                 input "Deploy to Staging?"
                 script {
-                    deployToEnv('8082', 'staging')
+                    withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN'),
+                                     string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+                        deployToEnv('8082', 'staging', SERVER_IP, GITHUB_TOKEN)
+                    }
                 }
             }
         }
@@ -43,7 +49,10 @@ pipeline {
             steps {
                 input "Deploy to Production?"
                 script {
-                    deployToEnv('8083', 'prod')
+                    withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN'),
+                                     string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+                        deployToEnv('8083', 'prod', SERVER_IP, GITHUB_TOKEN)
+                    }
                 }
             }
         }
@@ -56,21 +65,19 @@ pipeline {
     }
 }
 
-def deployToEnv(port, env) {
-    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-        sshagent(credentials: ['aws-ec2-pem']) {
-            sh """
-            ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << 'EOF'
-            cd /home/ubuntu/
-            rm -rf springboot-simple-restful-api-jenkins
-            git clone https://${GITHUB_TOKEN}@github.com/dwididit/springboot-simple-restful-api-jenkins.git
-            cd springboot-simple-restful-api-jenkins
-            export APP_PORT=${port}
-            sed -i 's/8080/${port}/' docker-compose.yml
-            docker compose down
-            docker compose up -d
-            EOF
-            """
-        }
+def deployToEnv(port, env, serverIp, githubToken) {
+    sshagent(credentials: ['aws-ec2-pem']) {
+        sh """
+        ssh -o StrictHostKeyChecking=no ubuntu@${serverIp} << 'EOF'
+        cd /home/ubuntu/
+        rm -rf springboot-simple-restful-api-jenkins
+        git clone https://${githubToken}@github.com/dwididit/springboot-simple-restful-api-jenkins.git
+        cd springboot-simple-restful-api-jenkins
+        export APP_PORT=${port}
+        sed -i 's/8080/${port}/' docker-compose.yml
+        docker compose down
+        docker compose up -d
+        EOF
+        """
     }
 }
