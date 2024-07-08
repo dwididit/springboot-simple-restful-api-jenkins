@@ -43,7 +43,7 @@ public class UserController {
 
     private UserResponseDTO convertToDTO(User user) {
         UserResponseDTO dto = new UserResponseDTO();
-        dto.setId(user.getId()); // Assuming these are the correct setter methods
+        dto.setId(user.getId());
         dto.setEmail(user.getEmail());
         dto.setUsername(user.getUsername());
         return dto;
@@ -77,12 +77,10 @@ public class UserController {
         user.setEmail(userCreateDTO.getEmail());
         user.setUsername(userCreateDTO.getUsername());
 
-        // Store the password securely (e.g., hash it) in production
         user.setPassword(userCreateDTO.getPassword());
 
         User savedUser = userService.createUser(user);
 
-        // Create a UserResponseDTO with only id, username, and email
         UserResponseDTO userResponseDTO = UserResponseDTO.builder()
                 .id(savedUser.getId())
                 .username(savedUser.getUsername())
