@@ -10,7 +10,9 @@ pipeline {
         stage('Checkout') {
             steps {
                 withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN')]) {
-                    git url: "https://${GITHUB_TOKEN}@github.com/dwididit/springboot-simple-restful-api-jenkins.git", branch: 'master'
+                    sh 'git config --global credential.helper store'
+                    sh 'echo "https://${GITHUB_TOKEN}:@github.com" > ~/.git-credentials'
+                    git url: "https://github.com/dwididit/springboot-simple-restful-api-jenkins.git", branch: 'master'
                 }
             }
         }
@@ -37,13 +39,11 @@ docker compose up -d
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
                         sshagent(credentials: ['aws-ec2-pem']) {
-                            withEnv(["SERVER_IP=${SERVER_IP}"]) {
-                                sh '''
-                                scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${SERVER_IP}:/home/ubuntu/
-                                scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
-                                scp -o StrictHostKeyChecking=no deploy.sh ubuntu@${SERVER_IP}:/home/ubuntu/
-                                '''
-                            }
+                            sh '''
+                            scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@$SERVER_IP:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@$SERVER_IP:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@$SERVER_IP:/home/ubuntu/
+                            '''
                         }
                     }
                 }
@@ -54,9 +54,22 @@ docker compose up -d
             steps {
                 script {
                     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        withEnv(["SERVER_IP=${SERVER_IP}"]) {
-                            deployToStaging()
-                            visitUrl('staging')
+                        sshagent(credentials: ['aws-ec2-pem']) {
+                            sh '''
+                            ssh -o StrictHostKeyChecking=no ubuntu@$SERVER_IP "/home/ubuntu/deploy.sh"
+                            '''
+                            sh '''
+                            sleep 30
+                            url="http://$SERVER_IP:8081/swagger-ui/index.html"
+                            response=$(curl -s -o /dev/null -w "%{http_code}" $url)
+                            echo "Response code: $response"
+                            if [ "$response" -eq 200 ]; then
+                                echo "Visit to $url was successful"
+                            else
+                                echo "Visit to $url failed with status code: $response"
+                                exit 1
+                            fi
+                            '''
                         }
                     }
                 }
@@ -69,28 +82,4 @@ docker compose up -d
             cleanWs()
         }
     }
-}
-
-def deployToStaging() {
-    sshagent(credentials: ['aws-ec2-pem']) {
-        sh '''
-        ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} "/home/ubuntu/deploy.sh"
-        '''
-    }
-}
-
-def visitUrl(env) {
-    echo "Visiting the ${env} environment"
-    sh '''
-    sleep 30
-    url="http://${SERVER_IP}:8081/swagger-ui/index.html"
-    response=$(curl -s -o /dev/null -w "%{http_code}" $url)
-    echo "Response code: $response"
-    if [ "$response" -eq 200 ]; then
-        echo "Visit to $url was successful"
-    else
-        echo "Visit to $url failed with status code: $response"
-        exit 1
-    fi
-    '''
 }
