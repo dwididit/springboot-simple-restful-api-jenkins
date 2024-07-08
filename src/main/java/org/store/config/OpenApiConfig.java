@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
-import io.swagger.v3.oas.annotations.servers.Server;
 
 @SecurityScheme( // Moved outside the class declaration
         name = "ApiKeyAuth",
@@ -28,10 +27,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
                 ),
                 description = "This API is created and managed by Dwi Didit Prasetiyo."
         ),
-        security = @SecurityRequirement(name = "BearerAuth"),
-        servers = {
-                @Server(url = "${spring.server-url}", description = "Server URL")
-        }
+        security = @SecurityRequirement(name = "BearerAuth")
 )
 public class OpenApiConfig {
 
