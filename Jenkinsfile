@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-repo/your-spring-boot-app.git'
+                git branch: 'master', url: 'https://github.com/dwididit/springboot-simple-restful-api-jenkins', credentialsId: 'github-token-id'
             }
         }
 
@@ -54,12 +54,13 @@ pipeline {
 }
 
 def deployToEnv(port, env) {
-    withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key-id', keyFileVariable: 'SSH_KEY')]) {
+    sshagent(credentials: ['aws-ec2-pem']) {
         sh """
-        scp -o StrictHostKeyChecking=no docker-compose.yml ec2-user@${SERVER_IP}:/home/ec2-user/
-        ssh -i ${SSH_KEY} ec2-user@${SERVER_IP} << EOF
-        cd /home/ec2-user/
+        scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
+        ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << EOF
+        cd /home/ubuntu/
         export APP_PORT=${port}
+        sed -i 's/8080/${APP_PORT}/' docker-compose.yml
         docker-compose down
         docker-compose up -d
         EOF
