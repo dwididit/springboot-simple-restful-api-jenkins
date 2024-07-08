@@ -61,7 +61,7 @@ def deployToEnv(port, env) {
         sshagent(credentials: ['aws-ec2-pem']) {
             sh """
             scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
-            ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << EOF
+            ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << 'EOF'
             cd /home/ubuntu/
             export APP_PORT=${port}
             sed -i 's/8080/${port}/' docker-compose.yml
