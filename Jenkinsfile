@@ -7,8 +7,8 @@ pipeline {
     }
 
     triggers {
-            githubPush()
-        }
+        githubPush()
+    }
 
     stages {
         stage('Checkout') {
@@ -45,8 +45,10 @@ docker compose up -d
                         sshagent(credentials: ['aws-ec2-pem']) {
                             sh '''
                             scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@$SERVER_IP:/home/ubuntu/
-                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@$SERVER_IP:/home/ubuntu/
-                            scp -o StrictHostKeyChecking=no deploy.sh ubuntu@$SERVER_IP:/home/ubuntu/
+                            scp -o StrictHostKeyChecking-no docker-compose.yml ubuntu@$SERVER_IP:/home/ubuntu/
+                            scp -o StrictHostKeyChecking-no deploy.sh ubuntu@$SERVER_IP:/home/ubuntu/
+                            scp -o StrictHostKeyChecking-no nginx/springboot-jenkins ubuntu@$SERVER_IP:/home/ubuntu/
+                            ssh -o StrictHostKeyChecking-no ubuntu@$SERVER_IP "sudo mv /home/ubuntu/springboot-jenkins /etc/nginx/sites-available/springboot-jenkins && sudo ln -sf /etc/nginx/sites-available/springboot-jenkins /etc/nginx/sites-enabled/springboot-jenkins && sudo systemctl restart nginx"
                             '''
                         }
                     }
