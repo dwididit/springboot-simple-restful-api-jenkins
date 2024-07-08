@@ -77,12 +77,13 @@ def deployToStaging(serverIp) {
 
 def visitUrl(env, url) {
     echo "Visiting the ${env} environment at ${url}"
-    script {
-        def response = httpRequest url: url, validResponseCodes: '200'
-        if (response.status == 200) {
-            echo "Visit to ${url} was successful"
-        } else {
-            error "Visit to ${url} failed with status code: ${response.status}"
-        }
-    }
+    sh """
+    response=\$(curl -s -o /dev/null -w "%{http_code}" ${url})
+    if [ "\$response" -eq 200 ]; then
+        echo "Visit to ${url} was successful"
+    else
+        echo "Visit to ${url} failed with status code: \$response"
+        exit 1
+    fi
+    """
 }
