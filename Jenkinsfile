@@ -16,7 +16,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package'
-                sh 'docker-compose build'
+                sh 'docker compose build'
             }
         }
 
@@ -62,8 +62,8 @@ def deployToEnv(port, env) {
         cd /home/ubuntu/
         export APP_PORT=${port}
         sed -i 's/8080/${APP_PORT}/' docker-compose.yml
-        docker-compose down
-        docker-compose up -d
+        docker compose down
+        docker compose up -d
         EOF
         """
     }
