@@ -60,9 +60,11 @@ def deployToEnv(port, env) {
     withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
         sshagent(credentials: ['aws-ec2-pem']) {
             sh """
-            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
+            tar -czf app.tar.gz *
+            scp -o StrictHostKeyChecking=no app.tar.gz ubuntu@${SERVER_IP}:/home/ubuntu/
             ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << 'EOF'
             cd /home/ubuntu/
+            tar -xzf app.tar.gz
             export APP_PORT=${port}
             sed -i 's/8080/${port}/' docker-compose.yml
             docker compose down
