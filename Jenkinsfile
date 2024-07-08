@@ -18,17 +18,28 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package'
-                sh 'docker compose build'
+            }
+        }
+
+        stage('Transfer Files') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+                        sshagent(credentials: ['aws-ec2-pem']) {
+                            sh """
+                            scp -o StrictHostKeyChecking=no target/store-0.0.1-SNAPSHOT.jar ubuntu@${SERVER_IP}:/home/ubuntu/
+                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@${SERVER_IP}:/home/ubuntu/
+                            """
+                        }
+                    }
+                }
             }
         }
 
         stage('Deploy to Dev') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN'),
-                                     string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8081', 'dev', SERVER_IP, GITHUB_TOKEN)
-                    }
+                    deployToEnv('8081', 'dev')
                 }
             }
         }
@@ -37,10 +48,7 @@ pipeline {
             steps {
                 input "Deploy to Staging?"
                 script {
-                    withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN'),
-                                     string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8082', 'staging', SERVER_IP, GITHUB_TOKEN)
-                    }
+                    deployToEnv('8082', 'staging')
                 }
             }
         }
@@ -49,10 +57,7 @@ pipeline {
             steps {
                 input "Deploy to Production?"
                 script {
-                    withCredentials([string(credentialsId: "${GITHUB_TOKEN_CRED_ID}", variable: 'GITHUB_TOKEN'),
-                                     string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
-                        deployToEnv('8083', 'prod', SERVER_IP, GITHUB_TOKEN)
-                    }
+                    deployToEnv('8083', 'prod')
                 }
             }
         }
@@ -65,19 +70,18 @@ pipeline {
     }
 }
 
-def deployToEnv(port, env, serverIp, githubToken) {
-    sshagent(credentials: ['aws-ec2-pem']) {
-        sh """
-        ssh -o StrictHostKeyChecking=no ubuntu@${serverIp} << 'EOF'
-        cd /home/ubuntu/
-        rm -rf springboot-simple-restful-api-jenkins
-        git clone https://${githubToken}@github.com/dwididit/springboot-simple-restful-api-jenkins.git
-        cd springboot-simple-restful-api-jenkins
-        export APP_PORT=${port}
-        sed -i 's/8080/${port}/' docker-compose.yml
-        docker compose down
-        docker compose up -d
-        EOF
-        """
+def deployToEnv(port, env) {
+    withCredentials([string(credentialsId: "${SERVER_IP_CRED_ID}", variable: 'SERVER_IP')]) {
+        sshagent(credentials: ['aws-ec2-pem']) {
+            sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << 'EOF'
+            cd /home/ubuntu/
+            export APP_PORT=${port}
+            sed -i 's/8080/${port}/' docker-compose.yml
+            docker compose down
+            docker compose up -d
+            EOF
+            """
+        }
     }
 }
